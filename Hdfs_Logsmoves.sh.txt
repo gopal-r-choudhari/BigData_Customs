@@ -1,0 +1,24 @@
+#Name: MoveHdfsBlocks.sh
+#Decription: Automatically move the older hdfs logs to HDFS spacified location.
+
+#!/bin/bash
+logfile="/home/user_abc/LogRetentionLogs.txt"
+echo "*******Script Execution Starts at :"$(date) >> "$logfile"
+find /var/log/hdfs/*hdfs-audit.log.* -mtime +6 |
+while IFS= read -r FILE; do
+        mv -f $FILE /home/user_abc/tempdir/
+                if [ $? -eq 0 ]
+                then
+                        echo "File moved Sucessfully to temp dir: File Name :"$FILE $(date) >> "$logfile"
+                fi
+done
+ls /home/gopal.choudhari/tempdir/ |
+while IFS= read -r MOVEDFILE; do
+        kdestroy
+        kinit -kt /etc/security/keytabs/hdfs.headless.keytab hdfs_newprod@HADOOP.COM
+        hadoop fs -moveFromLocal /home/user_abc/tempdir/$MOVEDFILE /logs_bkp/hdfs-audit
+        if [ $? -eq 0 ]
+        then
+                echo "File moved Sucessfully to HDFS: File Name :"$MOVEDFILE $(date) >> "$logfile"
+        fi
+done
